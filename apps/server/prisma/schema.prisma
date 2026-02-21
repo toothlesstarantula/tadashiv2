@@ -1,0 +1,140 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [vector]
+}
+
+// Better Auth Models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+// Domain Models
+
+model Transaction {
+  id          String   @id @default(cuid())
+  type        String // "expense" | "income"
+  amount      Float
+  currency    String   @default("USD")
+  category    String
+  description String?
+  occurredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String?
+
+  @@map("transactions")
+}
+
+model Meal {
+  id         String   @id @default(cuid())
+  name       String
+  calories   Int?
+  proteins   Float?
+  carbs      Float?
+  fats       Float?
+  consumedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  userId     String?
+
+  @@map("meals")
+}
+
+model Workout {
+  id              String   @id @default(cuid())
+  type            String
+  durationMinutes Int?
+  distanceKm      Float?
+  calories        Int?
+  notes           String?
+  occurredAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  userId          String?
+
+  @@map("workouts")
+}
+
+// Research Models (Vector Store)
+
+model ResearchDocument {
+  id        String          @id @default(cuid())
+  url       String
+  title     String?
+  createdAt DateTime        @default(now())
+  chunks    ResearchChunk[]
+
+  @@map("research_documents")
+}
+
+model ResearchChunk {
+  id         String                 @id @default(cuid())
+  content    String
+  embedding  Unsupported("vector")?
+  documentId String
+  document   ResearchDocument       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("research_chunks")
+}
