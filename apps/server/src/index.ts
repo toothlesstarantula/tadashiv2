@@ -6,7 +6,7 @@ import { mastra } from './mastra'
 const app = new Hono()
 
 app.use('/api/*', cors({
-  origin: ['http://localhost:5173', 'http://localhost:8100'],
+  origin: ['http://localhost:5173', 'http://localhost:8100', 'http://localhost:3000', 'http://localhost:5174'],
   credentials: true,
 }))
 

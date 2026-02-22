@@ -4,7 +4,7 @@ import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { prisma } from "../../db";
 
-const logWorkout = createTool({
+export const logWorkout = createTool({
   id: "log-workout",
   description: "Log a workout session",
   inputSchema: z.object({
@@ -39,6 +39,6 @@ export const fitnessAgent = new Agent({
   id: "fitness-agent",
   name: "Fitness Agent",
   instructions: "You are a fitness coach. Help the user track their workouts and stay active.",
-  model: openai("gpt-4o"),
+  model: openai("gpt-5-mini-2025-08-07"),
   tools: { logWorkout },
 });

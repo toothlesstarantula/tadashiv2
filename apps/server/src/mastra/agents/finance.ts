@@ -4,7 +4,7 @@ import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { prisma } from "../../db";
 
-const createTransaction = createTool({
+export const createTransaction = createTool({
   id: "create-transaction",
   description: "Log a new financial transaction (expense or income)",
   inputSchema: z.object({
@@ -39,7 +39,7 @@ const createTransaction = createTool({
   },
 });
 
-const getBalance = createTool({
+export const getBalance = createTool({
   id: "get-balance",
   description: "Get the current account balance",
   inputSchema: z.object({}),
@@ -83,6 +83,6 @@ export const financeAgent = new Agent({
   id: "finance-agent",
   name: "Finance Agent",
   instructions: "You are a financial advisor. Help the user track expenses and manage their budget.",
-  model: openai("gpt-4o"),
+  model: openai('gpt-5-mini-2025-08-07'),
   tools: { createTransaction, getBalance },
 });

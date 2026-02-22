@@ -4,7 +4,7 @@ import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { prisma } from "../../db";
 
-const logMeal = createTool({
+export const logMeal = createTool({
   id: "log-meal",
   description: "Log a meal consumed by the user",
   inputSchema: z.object({
@@ -43,6 +43,6 @@ export const nutritionAgent = new Agent({
   id: "nutrition-agent",
   name: "Nutrition Agent",
   instructions: "You are a nutritionist. Help the user track their meals and macronutrients.",
-  model: openai("gpt-4o"),
+  model: openai("gpt-5-mini-2025-08-07"),
   tools: { logMeal },
 });
