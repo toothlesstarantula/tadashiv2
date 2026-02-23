@@ -53,6 +53,16 @@ export type Meal = Prisma.MealModel
  */
 export type Workout = Prisma.WorkoutModel
 /**
+ * Model Conversation
+ * 
+ */
+export type Conversation = Prisma.ConversationModel
+/**
+ * Model Message
+ * 
+ */
+export type Message = Prisma.MessageModel
+/**
  * Model ResearchDocument
  * 
  */

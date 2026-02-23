@@ -6,7 +6,7 @@ import { prisma } from "../../db";
 
 export const logWorkout = createTool({
   id: "log-workout",
-  description: "Log a workout session",
+  description: "Registrar una sesión de entrenamiento",
   inputSchema: z.object({
     type: z.string(),
     durationMinutes: z.number(),
@@ -38,7 +38,7 @@ export const logWorkout = createTool({
 export const fitnessAgent = new Agent({
   id: "fitness-agent",
   name: "Fitness Agent",
-  instructions: "You are a fitness coach. Help the user track their workouts and stay active.",
+  instructions: "Eres un entrenador de fitness. Ayuda al usuario a registrar sus entrenamientos y mantenerse activo.",
   model: openai("gpt-5-mini-2025-08-07"),
   tools: { logWorkout },
 });

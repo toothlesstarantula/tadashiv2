@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import tadashiWhite from '@/assets/tadashi_white.png'
 
 const email = ref('')
 const password = ref('')
@@ -33,9 +34,12 @@ async function handleLogin() {
 <template>
   <div class="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-950 p-4">
     <div class="w-full max-w-md space-y-4">
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Tadashi</h1>
-        <p class="text-gray-500 dark:text-gray-400 mt-2">Sign in to your account</p>
+      <div class="text-center mb-8 flex flex-col items-center gap-3">
+        <img :src="tadashiWhite" alt="Tadashi" class="w-16 h-16 rounded-2xl shadow-sm" />
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Tadashi</h1>
+          <p class="text-gray-500 dark:text-gray-400 mt-2">Sign in to your account</p>
+        </div>
       </div>
       
       <UCard class="p-6">

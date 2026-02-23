@@ -58,6 +58,8 @@ export const ModelName = {
   Transaction: 'Transaction',
   Meal: 'Meal',
   Workout: 'Workout',
+  Conversation: 'Conversation',
+  Message: 'Message',
   ResearchDocument: 'ResearchDocument',
   ResearchChunk: 'ResearchChunk'
 } as const
@@ -182,6 +184,29 @@ export const WorkoutScalarFieldEnum = {
 } as const
 
 export type WorkoutScalarFieldEnum = (typeof WorkoutScalarFieldEnum)[keyof typeof WorkoutScalarFieldEnum]
+
+
+export const ConversationScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  userId: 'userId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ConversationScalarFieldEnum = (typeof ConversationScalarFieldEnum)[keyof typeof ConversationScalarFieldEnum]
+
+
+export const MessageScalarFieldEnum = {
+  id: 'id',
+  conversationId: 'conversationId',
+  role: 'role',
+  content: 'content',
+  createdAt: 'createdAt',
+  userId: 'userId'
+} as const
+
+export type MessageScalarFieldEnum = (typeof MessageScalarFieldEnum)[keyof typeof MessageScalarFieldEnum]
 
 
 export const ResearchDocumentScalarFieldEnum = {
