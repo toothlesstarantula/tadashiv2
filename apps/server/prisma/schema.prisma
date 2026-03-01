@@ -1,10 +1,7 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider        = "prisma-client"
-  output = "../generated/prisma"
-  previewFeatures = ["postgresqlExtensions"]
+  output          = "../generated/prisma"
+  previewFeatures = ["postgresqlExtensions", "partialIndexes"]
 }
 
 datasource db {
@@ -12,7 +9,6 @@ datasource db {
   extensions = [vector]
 }
 
-// Better Auth Models
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -21,8 +17,8 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  sessions      Session[]
   accounts      Account[]
+  sessions      Session[]
 
   @@map("user")
 }
@@ -34,9 +30,9 @@ model Session {
   ipAddress String?
   userAgent String?
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("session")
 }
@@ -46,7 +42,6 @@ model Account {
   accountId             String
   providerId            String
   userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
   refreshToken          String?
   idToken               String?
@@ -56,6 +51,7 @@ model Account {
   password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("account")
 }
@@ -71,11 +67,9 @@ model Verification {
   @@map("verification")
 }
 
-// Domain Models
-
 model Transaction {
   id          String   @id @default(cuid())
-  type        String // "expense" | "income"
+  type        String
   amount      Float
   currency    String   @default("USD")
   category    String
@@ -85,6 +79,15 @@ model Transaction {
   updatedAt   DateTime @updatedAt
   userId      String?
 
+  accountId            String?
+  account              FinancialAccount? @relation("AccountTransactions", fields: [accountId], references: [id])
+  
+  toAccountId          String?
+  toAccount            FinancialAccount? @relation("TransferDestination", fields: [toAccountId], references: [id])
+
+  installments         Int?     @default(1)
+  currentInstallment   Int?     @default(1)
+  
   @@map("transactions")
 }
 
@@ -130,20 +133,35 @@ model Conversation {
 }
 
 model Message {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   conversationId String
-  role           String   // "user" | "assistant" | "system"
-  content        String   // texto plano de la parte principal de la respuesta
-  createdAt      DateTime @default(now())
+  role           String
+  content        String
+  createdAt      DateTime     @default(now())
   userId         String?
-
+  toolCalls      Json?
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
   @@map("messages")
 }
 
-// Research Models (Vector Store)
+model FinancialAccount {
+  id           String   @id @default(cuid())
+  name         String
+  type         String   // "DEBIT", "CREDIT", "CASH", "SAVINGS", "INVESTMENT"
+  balance      Float    @default(0)
+  creditLimit  Float?
+  currency     String   @default("MXN")
+  userId       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transactions         Transaction[] @relation("AccountTransactions")
+  transfersDestination Transaction[] @relation("TransferDestination")
+
+  @@map("financial_accounts")
+}
 
 model ResearchDocument {
   id        String          @id @default(cuid())
@@ -164,3 +182,4 @@ model ResearchChunk {
 
   @@map("research_chunks")
 }
+

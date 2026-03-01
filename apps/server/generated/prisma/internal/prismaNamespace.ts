@@ -393,6 +393,7 @@ export const ModelName = {
   Workout: 'Workout',
   Conversation: 'Conversation',
   Message: 'Message',
+  FinancialAccount: 'FinancialAccount',
   ResearchDocument: 'ResearchDocument',
   ResearchChunk: 'ResearchChunk'
 } as const
@@ -410,7 +411,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "account" | "verification" | "transaction" | "meal" | "workout" | "conversation" | "message" | "researchDocument" | "researchChunk"
+    modelProps: "user" | "session" | "account" | "verification" | "transaction" | "meal" | "workout" | "conversation" | "message" | "financialAccount" | "researchDocument" | "researchChunk"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1080,6 +1081,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    FinancialAccount: {
+      payload: Prisma.$FinancialAccountPayload<ExtArgs>
+      fields: Prisma.FinancialAccountFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.FinancialAccountFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FinancialAccountPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.FinancialAccountFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FinancialAccountPayload>
+        }
+        findFirst: {
+          args: Prisma.FinancialAccountFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FinancialAccountPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.FinancialAccountFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FinancialAccountPayload>
+        }
+        findMany: {
+          args: Prisma.FinancialAccountFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FinancialAccountPayload>[]
+        }
+        create: {
+          args: Prisma.FinancialAccountCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FinancialAccountPayload>
+        }
+        createMany: {
+          args: Prisma.FinancialAccountCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.FinancialAccountCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FinancialAccountPayload>[]
+        }
+        delete: {
+          args: Prisma.FinancialAccountDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FinancialAccountPayload>
+        }
+        update: {
+          args: Prisma.FinancialAccountUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FinancialAccountPayload>
+        }
+        deleteMany: {
+          args: Prisma.FinancialAccountDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.FinancialAccountUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.FinancialAccountUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FinancialAccountPayload>[]
+        }
+        upsert: {
+          args: Prisma.FinancialAccountUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FinancialAccountPayload>
+        }
+        aggregate: {
+          args: Prisma.FinancialAccountAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFinancialAccount>
+        }
+        groupBy: {
+          args: Prisma.FinancialAccountGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FinancialAccountGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.FinancialAccountCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FinancialAccountCountAggregateOutputType> | number
+        }
+      }
+    }
     ResearchDocument: {
       payload: Prisma.$ResearchDocumentPayload<ExtArgs>
       fields: Prisma.ResearchDocumentFieldRefs
@@ -1335,7 +1410,11 @@ export const TransactionScalarFieldEnum = {
   occurredAt: 'occurredAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  userId: 'userId'
+  userId: 'userId',
+  accountId: 'accountId',
+  toAccountId: 'toAccountId',
+  installments: 'installments',
+  currentInstallment: 'currentInstallment'
 } as const
 
 export type TransactionScalarFieldEnum = (typeof TransactionScalarFieldEnum)[keyof typeof TransactionScalarFieldEnum]
@@ -1390,10 +1469,26 @@ export const MessageScalarFieldEnum = {
   role: 'role',
   content: 'content',
   createdAt: 'createdAt',
-  userId: 'userId'
+  userId: 'userId',
+  toolCalls: 'toolCalls'
 } as const
 
 export type MessageScalarFieldEnum = (typeof MessageScalarFieldEnum)[keyof typeof MessageScalarFieldEnum]
+
+
+export const FinancialAccountScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  type: 'type',
+  balance: 'balance',
+  creditLimit: 'creditLimit',
+  currency: 'currency',
+  userId: 'userId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FinancialAccountScalarFieldEnum = (typeof FinancialAccountScalarFieldEnum)[keyof typeof FinancialAccountScalarFieldEnum]
 
 
 export const ResearchDocumentScalarFieldEnum = {
@@ -1423,6 +1518,14 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
 export const QueryMode = {
   default: 'default',
   insensitive: 'insensitive'
@@ -1437,6 +1540,15 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 
 
 
@@ -1505,6 +1617,20 @@ export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'In
  * Reference to a field of type 'Int[]'
  */
 export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 /**
@@ -1611,6 +1737,7 @@ export type GlobalOmitConfig = {
   workout?: Prisma.WorkoutOmit
   conversation?: Prisma.ConversationOmit
   message?: Prisma.MessageOmit
+  financialAccount?: Prisma.FinancialAccountOmit
   researchDocument?: Prisma.ResearchDocumentOmit
   researchChunk?: Prisma.ResearchChunkOmit
 }

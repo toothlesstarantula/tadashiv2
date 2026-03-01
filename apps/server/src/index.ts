@@ -127,11 +127,51 @@ app.get('/api/conversations/:id', async (c) => {
         id: m.id,
         role: m.role === 'assistant' ? 'assistant' : 'user',
         text: m.content,
+        toolCalls: m.toolCalls,
         createdAt: m.createdAt.toISOString(),
       })),
     })
   } catch (error: any) {
     console.error('Error in GET /api/conversations/:id:', error)
+    return c.json(
+      {
+        error: error.message || 'Internal Server Error',
+      },
+      500,
+    )
+  }
+})
+
+app.delete('/api/conversations/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const authSession = await auth.api.getSession({ headers: c.req.raw.headers })
+    const userId = authSession?.user?.id
+
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
+
+    const conversation = await prisma.conversation.findFirst({
+      where: {
+        id,
+        userId,
+      },
+    })
+
+    if (!conversation) {
+      return c.json({ error: 'Conversation not found' }, 404)
+    }
+
+    await prisma.conversation.delete({
+      where: {
+        id,
+      },
+    })
+
+    return c.json({ success: true })
+  } catch (error: any) {
+    console.error('Error in DELETE /api/conversations/:id:', error)
     return c.json(
       {
         error: error.message || 'Internal Server Error',
@@ -175,18 +215,27 @@ app.post('/api/chat', async (c) => {
     }
 
     const lastUserMessage = messages?.[messages.length - 1]
-    if (currentConversationId && lastUserMessage?.content && userId) {
+    let userContent = lastUserMessage?.content
+    if (!userContent && Array.isArray(lastUserMessage?.parts)) {
+      userContent = lastUserMessage.parts
+        .filter((p: any) => p.type === 'text')
+        .map((p: any) => p.text)
+        .join('')
+    }
+
+    if (currentConversationId && userContent && userId) {
       await prisma.message.create({
         data: {
           conversationId: currentConversationId,
           role: 'user',
-          content: lastUserMessage.content,
+          content: userContent,
           userId,
         },
       })
     }
 
     let assistantBuffer = ''
+    const toolCallsMap = new Map<string, any>()
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -206,32 +255,48 @@ app.post('/api/chat', async (c) => {
                 chunk = `0:${JSON.stringify(text)}\n`;
                 break;
               }
-              case 'tool-call':
+              case 'tool-call': {
+                toolCallsMap.set(value.payload.toolCallId, {
+                  id: value.payload.toolCallId,
+                  name: value.payload.toolName,
+                  args: value.payload.args,
+                  state: 'calling'
+                })
                 chunk = `9:${JSON.stringify({
                   toolCallId: value.payload.toolCallId,
                   toolName: value.payload.toolName,
                   args: value.payload.args
                 })}\n`;
                 break;
-              case 'tool-result':
+              }
+              case 'tool-result': {
+                const tc = toolCallsMap.get(value.payload.toolCallId)
+                if (tc) {
+                  tc.result = value.payload.result
+                  tc.state = 'done'
+                }
                 chunk = `a:${JSON.stringify({
                   toolCallId: value.payload.toolCallId,
                   toolName: value.payload.toolName,
                   result: value.payload.result
                 })}\n`;
                 break;
+              }
               case 'finish':
                 chunk = `u:${JSON.stringify({
                   ...value,
                   conversationId: currentConversationId,
                 })}\n`;
 
-                if (currentConversationId && assistantBuffer && userId) {
+                const toolCalls = Array.from(toolCallsMap.values())
+
+                if (currentConversationId && userId && (assistantBuffer || toolCalls.length > 0)) {
                   await prisma.message.create({
                     data: {
                       conversationId: currentConversationId,
                       role: 'assistant',
                       content: assistantBuffer,
+                      toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
                       userId,
                     },
                   })

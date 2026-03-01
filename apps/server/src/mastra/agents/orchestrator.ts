@@ -1,10 +1,9 @@
 import { Agent } from "@mastra/core/agent";
-import { Memory } from "@mastra/memory";
-import { PostgresStore } from "@mastra/pg";
 import { createTool } from "@mastra/core/tools";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
-import { createTransaction, getBalance, getExpenseSummary, updateTransaction, deleteTransaction } from "./finance";
+import { mastraMemory } from "../memory";
+import { createTransaction, getBalance, getExpenseSummary, updateTransaction, deleteTransaction, createAccount, getAccounts } from "./finance";
 import { logMeal, getDailyNutrition, getNutritionTrend, deleteMeal } from "./nutrition";
 import { logWorkout } from "./fitness";
 
@@ -58,27 +57,28 @@ export const orchestratorAgent = new Agent({
       - Luego actúa sin pedir más detalles.
 
     FINANZAS:
-    - Siempre que crees, edites o elimines una transacción:
-      1) Usa la herramienta correspondiente (create-transaction, update-transaction o delete-transaction).
-      2) Inmediatamente después, llama a get-expense-summary con un límite razonable (por ejemplo 10) para obtener la tabla actualizada desde la base de datos.
+    - Al ELIMINAR una transacción:
+      1) Usa delete-transaction. Esta herramienta devuelve la lista actualizada automáticamente. NO llames a get-expense-summary en el mismo turno.
+    - Al CREAR o EDITAR una transacción:
+      1) Usa la herramienta correspondiente.
+      2) Inmediatamente después, llama a get-expense-summary para mostrar la tabla actualizada.
       3) Usa esa tabla como parte central de tu respuesta, de modo que el usuario vea reflejado el cambio al instante.
     - CAPACIDADES:
       - Registrar gastos/ingresos, consultar saldo, ver resumen de gastos (tabla), editar o eliminar transacciones si el usuario lo pide.
+      - TARJETAS DE CRÉDITO Y MSI:
+        - Las Tarjetas de Crédito tienen saldo negativo (Deuda). Un gasto aumenta la deuda (vuelve el saldo más negativo).
+        - Pagar la tarjeta es una TRANSFERENCIA de una cuenta de Débito/Efectivo a la Tarjeta de Crédito (esto reduce la deuda).
+        - Si el usuario menciona "a meses" o "MSI", usa el campo \`installments\` en \`createTransaction\`. Registra el MONTO TOTAL en la fecha actual (esto impacta la deuda total).
     - Nutrición: Registrar comidas/macronutrientes, consultar resumen diario (calorías/macros), ver tendencias semanales/mensuales (gráficos) y eliminar registros por nombre o número (#) sin exponer IDs internos.
     - Fitness: Registrar entrenamientos.
 
     Ejemplo de interacción:
-    Usuario: "Gasté 500 en tacos"
-    Tú: (Llama a la herramienta createTransaction con amount=500, category="Comida", description="tacos")
-    Luego responde: "Registré 500 para tacos."
+    Usuario: "Compré una Mac de 30,000 a 12 meses con Nu Crédito"
+    Tú: (Llama a createTransaction con amount=30000, category="Tecnología", accountId=[ID_NU_CREDITO], installments=12)
+    Respuesta: "Registré la Mac de $30,000 a 12 meses en Nu Crédito. Tu deuda total aumentó."
   `,
   model: openai("gpt-5-mini-2025-08-07"),
-  memory: new Memory({
-    storage: new PostgresStore({
-      id: "tadashi-memory",
-      connectionString: process.env.MASTRA_DATABASE_URL || process.env.DATABASE_URL!,
-    }),
-  }),
+  memory: mastraMemory,
   tools: { 
     searchTool,
     createTransaction,
@@ -86,6 +86,8 @@ export const orchestratorAgent = new Agent({
     getExpenseSummary,
     updateTransaction,
     deleteTransaction,
+    createAccount,
+    getAccounts,
     logMeal,
     getDailyNutrition,
     getNutritionTrend,

@@ -192,3 +192,15 @@ Recomendación:
   - Añadir rutas en Hono y wiring en Mastra.
   - Documentar el agent y sus tools en este archivo.
 
+---
+
+## 9. Reglas de Infraestructura y Base de Datos
+
+- **Base de Datos (Prisma)**:
+  - **PROHIBIDO**: Usar `prisma db push` o `prisma migrate deploy` en desarrollo.
+  - **OBLIGATORIO**: Usar siempre `prisma migrate dev` para aplicar cambios en el esquema.
+  - Si `prisma migrate dev` falla (ej. drift, conflictos):
+    - NO intentar forzarlo con `db push`.
+    - Pedir intervención manual o instrucciones para resolver el conflicto.
+  - Razón: `db push` modifica el esquema sin dejar rastro en el historial de migraciones, causando inconsistencias y errores futuros.
+

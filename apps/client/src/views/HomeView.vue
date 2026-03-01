@@ -40,6 +40,60 @@ const messages = ref<ChatMessage[]>([])
 const wireMessages = ref<UIMessage[]>([])
 const input = ref('')
 const isStreaming = ref(false)
+const isListening = ref(false)
+const speechError = ref<string | null>(null)
+let recognition: any = null
+
+const toggleSpeechRecognition = () => {
+  if (isListening.value) {
+    recognition?.stop()
+    isListening.value = false
+    return
+  }
+
+  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  if (!SpeechRecognition) {
+    speechError.value = 'Navegador no soportado'
+    setTimeout(() => speechError.value = null, 3000)
+    return
+  }
+
+  recognition = new SpeechRecognition()
+  recognition.lang = 'es-ES'
+  recognition.continuous = false
+  recognition.interimResults = false
+
+  recognition.onstart = () => {
+    isListening.value = true
+  }
+
+  recognition.onresult = (event: any) => {
+    const transcript = event.results[0][0].transcript
+    input.value += (input.value ? ' ' : '') + transcript
+  }
+
+  recognition.onerror = (event: any) => {
+    console.error('Speech recognition error', event.error)
+    isListening.value = false
+    
+    if (event.error === 'not-allowed') {
+      speechError.value = 'Permiso denegado: Habilita el micrófono'
+    } else if (event.error === 'service-not-allowed') {
+      speechError.value = 'Servicio no disponible'
+    } else if (event.error === 'no-speech') {
+      return
+    } else {
+      speechError.value = `Error: ${event.error}`
+    }
+    setTimeout(() => speechError.value = null, 4000)
+  }
+
+  recognition.onend = () => {
+    isListening.value = false
+  }
+
+  recognition.start()
+}
 
 type ConversationSummary = {
   id: string
@@ -338,6 +392,7 @@ async function openConversation(id: string) {
       id: string
       role: 'user' | 'assistant' | 'system'
       text: string
+      toolCalls?: any[]
       createdAt: string
     }[]
 
@@ -345,7 +400,17 @@ async function openConversation(id: string) {
       id: m.id,
       role: m.role === 'assistant' ? 'assistant' : 'user',
       text: m.text,
-      tools: [],
+      tools: (m.toolCalls || []).map((tc: any) => {
+        const isError = tc.result && tc.result.error
+        return {
+          id: tc.id,
+          name: tc.name,
+          state: tc.state || (isError ? 'error' : 'done'),
+          args: tc.args,
+          result: tc.result,
+          errorMessage: isError ? (tc.result.message || 'Error al ejecutar la tool') : tc.errorMessage,
+        }
+      }),
       createdAt: m.createdAt,
       meta: {
         tokensApprox: estimateTokens(m.text),
@@ -357,6 +422,26 @@ async function openConversation(id: string) {
     )
   } catch (error) {
     console.error('Error loading conversation', error)
+  }
+}
+
+async function deleteConversation(id: string) {
+  if (!confirm('¿Eliminar esta conversación?')) return
+
+  try {
+    const response = await fetch(`http://localhost:3000/api/conversations/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    })
+
+    if (response.ok) {
+      if (activeConversationId.value === id) {
+        startNewConversation()
+      }
+      await fetchConversations()
+    }
+  } catch (error) {
+    console.error('Error deleting conversation', error)
   }
 }
 
@@ -418,7 +503,7 @@ const getMessageText = (msg: ChatMessage) => {
   if (!text.trim()) return ''
 
   const hasExpenseSummaryTool = msg.tools.some(
-    t => t.name === 'getExpenseSummary' && t.state === 'done' && t.result,
+    t => (t.name === 'getExpenseSummary' || t.name === 'deleteTransaction') && t.state === 'done' && t.result?.transactions,
   )
 
   if (!hasExpenseSummaryTool) return text
@@ -472,6 +557,13 @@ const getToolCapsules = (msg: ChatMessage) => {
     }
   }
 
+  // Prioritize deleteTransaction: if present and successful, remove getExpenseSummary
+  // This prevents showing stale data if the agent calls both in parallel
+  const deleteTool = result.find(t => t.name === 'deleteTransaction' && t.state === 'done' && t.result?.transactions)
+  if (deleteTool) {
+    return result.filter(t => t.name !== 'getExpenseSummary')
+  }
+
   return result
 }
 
@@ -518,15 +610,23 @@ const isThinking = computed(() => isStreaming.value)
             :key="conv.id"
             type="button"
             @click="openConversation(conv.id)"
-            class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs conversation-item"
+            class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs conversation-item group"
             :class="conv.id === activeConversationId ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'"
           >
             <span class="truncate max-w-[140px] text-left">
               {{ conv.title }}
             </span>
-            <span class="text-[10px] text-gray-500 ml-2 whitespace-nowrap">
+            <span class="text-[10px] text-gray-500 ml-2 whitespace-nowrap group-hover:hidden">
               {{ formatDate(conv.updatedAt) }}
             </span>
+            <UButton
+              icon="i-heroicons-trash"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              class="hidden group-hover:flex ml-2 text-gray-300 hover:text-red-400 hover:bg-white/10 shrink-0"
+              @click.stop="deleteConversation(conv.id)"
+            />
           </button>
           <div v-if="!conversations.length" class="px-2 py-1 text-[11px] text-gray-500">
             No hay conversaciones aún
@@ -604,7 +704,13 @@ const isThinking = computed(() => isStreaming.value)
           </h1>
           
           <!-- Input Box (Centered) -->
-          <div class="w-full bg-[#27272a] rounded-3xl p-4 shadow-2xl border border-white/5 transition-all focus-within:ring-1 focus-within:ring-white/20">
+          <div class="w-full bg-[#27272a] rounded-3xl p-4 shadow-2xl border border-white/5 transition-all focus-within:ring-1 focus-within:ring-white/20 relative">
+            <div v-if="speechError" class="absolute -top-14 left-0 right-0 flex justify-center z-50">
+              <div class="bg-red-500/90 text-white text-sm px-4 py-2 rounded-full shadow-lg backdrop-blur-sm animate-fade-in-up flex items-center gap-2">
+                <span class="i-heroicons-exclamation-circle w-4 h-4"></span>
+                {{ speechError }}
+              </div>
+            </div>
             <textarea
                 v-model="input"
                 rows="1"
@@ -620,7 +726,14 @@ const isThinking = computed(() => isStreaming.value)
                 <UButton icon="i-heroicons-puzzle-piece" color="neutral" variant="ghost" class="text-gray-400 hover:text-white rounded-full icon-button" />
               </div>
               <div class="flex items-center gap-2">
-                 <UButton icon="i-heroicons-microphone" color="neutral" variant="ghost" class="text-gray-400 hover:text-white rounded-full icon-button" />
+                 <UButton 
+                  icon="i-heroicons-microphone" 
+                  :color="isListening ? 'primary' : 'neutral'" 
+                  variant="ghost" 
+                  class="text-gray-400 hover:text-white rounded-full icon-button"
+                  :class="{ 'text-blue-400 animate-pulse bg-blue-500/10': isListening }"
+                  @click="toggleSpeechRecognition"
+                 />
                  <UButton 
                   @click="handleSubmit"
                   icon="i-heroicons-arrow-up" 
@@ -694,7 +807,7 @@ const isThinking = computed(() => isStreaming.value)
                       <!-- Results UI -->
                       <div v-else>
                         <!-- Expense Table -->
-                        <div v-if="tool.name === 'getExpenseSummary'" class="w-full">
+                        <div v-if="tool.name === 'getExpenseSummary' || (tool.name === 'deleteTransaction' && tool.result?.transactions)" class="w-full">
                           <TransactionTable 
                             :transactions="tool.result.transactions" 
                             class="mb-2"
@@ -772,7 +885,13 @@ const isThinking = computed(() => isStreaming.value)
 
       <!-- Bottom Input (Visible only when not empty) -->
       <div v-if="!isEmpty" class=" w-full absolute bottom-0 left-0 right-0 p-4 bg-linear-to-t from-[#09090b] via-[#09090b] to-transparent pt-12">
-        <div class="max-w-3xl mx-auto w-full">
+        <div class="max-w-3xl mx-auto w-full relative">
+           <div v-if="speechError" class="absolute -top-14 left-0 right-0 flex justify-center z-50">
+              <div class="bg-red-500/90 text-white text-sm px-4 py-2 rounded-full shadow-lg backdrop-blur-sm animate-fade-in-up flex items-center gap-2">
+                <span class="i-heroicons-exclamation-circle w-4 h-4"></span>
+                {{ speechError }}
+              </div>
+           </div>
            <div class="w-full bg-[#27272a] rounded-3xl p-3 shadow-xl border border-white/5 flex items-center gap-2 transition-all focus-within:ring-1 focus-within:ring-white/20 input-shell">
             <UButton icon="i-heroicons-plus" color="neutral" variant="ghost" class="text-gray-400 hover:text-white rounded-full" />
              <textarea
@@ -782,6 +901,14 @@ const isThinking = computed(() => isStreaming.value)
                  class="flex-1 bg-transparent border-none text-white placeholder-gray-500 focus:ring-0 focus:outline-none resize-none py-2 max-h-32"
                  @keydown.enter.prevent="handleSubmit"
                ></textarea>
+              <UButton 
+                icon="i-heroicons-microphone" 
+                :color="isListening ? 'primary' : 'neutral'" 
+                variant="ghost" 
+                class="text-gray-400 hover:text-white rounded-full icon-button"
+                :class="{ 'text-blue-400 animate-pulse bg-blue-500/10': isListening }"
+                @click="toggleSpeechRecognition"
+              />
               <UButton 
                 @click="handleSubmit"
                 icon="i-heroicons-paper-airplane" 

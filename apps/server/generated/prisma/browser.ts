@@ -63,6 +63,11 @@ export type Conversation = Prisma.ConversationModel
  */
 export type Message = Prisma.MessageModel
 /**
+ * Model FinancialAccount
+ * 
+ */
+export type FinancialAccount = Prisma.FinancialAccountModel
+/**
  * Model ResearchDocument
  * 
  */
