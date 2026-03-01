@@ -156,7 +156,7 @@ async function sendToServer(requestMessages: UIMessage[], assistantMessage: Chat
   const startTime = Date.now()
 
   try {
-    const response = await fetch('http://localhost:3000/api/chat', {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -367,7 +367,7 @@ async function fetchConversations() {
   try {
     const q = conversationSearch.value.trim()
     const params = q ? `?q=${encodeURIComponent(q)}` : ''
-    const response = await fetch(`http://localhost:3000/api/conversations${params}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/conversations${params}`, {
       credentials: 'include',
     })
     if (!response.ok) return
@@ -380,7 +380,7 @@ async function fetchConversations() {
 
 async function openConversation(id: string) {
   try {
-    const response = await fetch(`http://localhost:3000/api/conversations/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/conversations/${id}`, {
       credentials: 'include',
     })
     if (!response.ok) return
@@ -429,7 +429,7 @@ async function deleteConversation(id: string) {
   if (!confirm('¿Eliminar esta conversación?')) return
 
   try {
-    const response = await fetch(`http://localhost:3000/api/conversations/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/conversations/${id}`, {
       method: 'DELETE',
       credentials: 'include',
     })

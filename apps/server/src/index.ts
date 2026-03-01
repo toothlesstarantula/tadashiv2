@@ -23,7 +23,13 @@ function getLastUserText(messages: any[]): string {
 }
 
 app.use('/api/*', cors({
-  origin: ['http://localhost:5173', 'http://localhost:8100', 'http://localhost:3000', 'http://localhost:5174'],
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:8100',
+    'http://localhost:3000',
+    'http://localhost:5174',
+    process.env.CLIENT_URL || ''
+  ].filter(Boolean),
   credentials: true,
 }))
 
