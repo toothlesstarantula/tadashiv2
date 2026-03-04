@@ -3,9 +3,11 @@ FROM oven/bun:1 AS base
 WORKDIR /app
 
 # Copy root package.json and lockfile
-COPY package.json bun.lockb* ./
+COPY package.json bun.lockb* .npmrc* ./
 
-# Copy apps/server package.json
+# Copy all apps package.json to resolve workspace dependencies
+COPY apps/client/package.json ./apps/client/
+COPY apps/mobile/package.json ./apps/mobile/
 COPY apps/server/package.json ./apps/server/
 
 # Install dependencies

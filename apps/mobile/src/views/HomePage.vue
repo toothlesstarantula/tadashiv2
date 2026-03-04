@@ -264,29 +264,31 @@
   
       <!-- Floating Input Bar (Active State) -->
       <div v-if="messages.length > 0" class="fixed bottom-0 left-0 right-0 bg-[#000000] border-t border-gray-900 p-2 pb-6 backdrop-blur-md bg-opacity-90 z-10">
-        <div class="max-w-3xl mx-auto flex items-end gap-2 bg-[#1e1e1e] rounded-3xl p-2 border border-gray-800">
-          <ion-button fill="clear" size="small" color="medium" class="rounded-full w-8 h-8 p-0 mb-1">
-             <ion-icon slot="icon-only" :icon="add" class="text-xl"></ion-icon>
-          </ion-button>
+        <div class="max-w-3xl mx-auto flex items-end gap-2 bg-[#1e1e1e] rounded-3xl p-1.5 border border-gray-800">
+          <div class="h-10 w-10 flex items-center justify-center">
+            <ion-button fill="clear" size="small" color="medium" class="rounded-full w-8 h-8 p-0 m-0">
+               <ion-icon slot="icon-only" :icon="add" class="text-xl"></ion-icon>
+            </ion-button>
+          </div>
           
           <ion-textarea
               v-model="input"
               placeholder="Escribe un mensaje..."
               :auto-grow="true"
               :rows="1"
-              class="custom-textarea-floating flex-1 text-gray-200 bg-transparent border-none focus:outline-none py-2"
-              style="--background: transparent; --padding-start: 0; max-height: 120px; overflow-y: auto;"
+              class="custom-textarea-floating flex-1 text-gray-200 bg-transparent border-none focus:outline-none py-2.5"
+              style="--background: transparent; --padding-start: 0; --padding-end: 0; max-height: 120px; overflow-y: auto; margin-bottom: 1px;"
               @keydown.enter.prevent="handleSubmit"
           ></ion-textarea>
           
-          <ion-button fill="clear" @click="toggleSpeechRecognition" :color="isListening ? 'danger' : 'medium'" class="rounded-full w-10 h-10 mb-0">
+          <ion-button fill="clear" @click="toggleSpeechRecognition" :color="isListening ? 'danger' : 'medium'" class="rounded-full w-10 h-10 m-0">
               <ion-icon slot="icon-only" :icon="mic" class="text-xl"></ion-icon>
           </ion-button>
             
           <ion-button 
               @click="handleSubmit" 
               :disabled="!input.trim() || isStreaming"
-              class="rounded-full w-10 h-10 m-0 mb-0"
+              class="rounded-full w-10 h-10 m-0"
               shape="round"
               color="light"
               style="--border-radius: 50%; width: 40px; height: 40px;"
