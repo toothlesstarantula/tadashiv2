@@ -28,6 +28,12 @@ app.use('/api/*', cors({
     'http://localhost:8100',
     'http://localhost:3000',
     'http://localhost:5174',
+    'capacitor://localhost',
+    'http://localhost',
+    'http://localhost:4000',
+    'http://10.0.2.2:3000',
+    'http://192.168.100.22:3000',
+    'http://192.168.100.22:8100',
     process.env.CLIENT_URL || ''
   ].filter(Boolean),
   credentials: true,
