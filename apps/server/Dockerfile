@@ -2,23 +2,20 @@
 FROM oven/bun:1 AS base
 WORKDIR /app
 
-# Copy root package.json and lockfile
-COPY package.json bun.lockb* .npmrc* ./
-
-# Copy all apps package.json to resolve workspace dependencies
-COPY apps/client/package.json ./apps/client/
-COPY apps/mobile/package.json ./apps/mobile/
-COPY apps/server/package.json ./apps/server/
+# Copy package.json and lockfile (if they exist in the context)
+COPY package.json bun.lockb* ./
 
 # Install dependencies
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Copy source code
-COPY apps/server ./apps/server
+COPY . .
 
 # Generate Prisma Client
-WORKDIR /app/apps/server
 RUN bunx prisma generate
+
+# run migrations
+RUN bunx prisma migrate deploy
 
 # Expose port
 EXPOSE 3000
